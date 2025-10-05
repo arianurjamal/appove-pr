@@ -35,7 +35,7 @@ jobs:
       
       - name: Approve Pull Request
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TOKEN }}
         run: |
           OWNER="${{ steps.parse.outputs.owner }}"
           REPO="${{ steps.parse.outputs.repo }}"
