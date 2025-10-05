@@ -1,0 +1,51 @@
+name: Auto Approve Pull Request
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_url:
+        description: 'Pull Request URL (e.g., https://github.com/owner/repo/pull/123)'
+        required: true
+        type: string
+
+jobs:
+  approve-pr:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Validate PR URL
+        id: parse
+        run: |
+          PR_URL="${{ github.event.inputs.pr_url }}"
+          
+          if [[ ! "$PR_URL" =~ ^https://github\.com/([^/]+)/([^/]+)/pull/([0-9]+) ]]; then
+            echo "Error: Invalid PR URL format. Expected: https://github.com/owner/repo/pull/123"
+            exit 1
+          fi
+          
+          OWNER="${BASH_REMATCH[1]}"
+          REPO="${BASH_REMATCH[2]}"
+          PR_NUMBER="${BASH_REMATCH[3]}"
+          
+          echo "owner=$OWNER" >> $GITHUB_OUTPUT
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          
+          echo "Parsed PR: $OWNER/$REPO#$PR_NUMBER"
+      
+      - name: Approve Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          OWNER="${{ steps.parse.outputs.owner }}"
+          REPO="${{ steps.parse.outputs.repo }}"
+          PR_NUMBER="${{ steps.parse.outputs.pr_number }}"
+          
+          echo "Approving PR #$PR_NUMBER in $OWNER/$REPO"
+          
+          gh pr review $PR_NUMBER \
+            --repo "$OWNER/$REPO" \
+            --approve \
+            --body "Automatically approved via workflow"
+          
+          echo "✅ PR approved successfully!"
